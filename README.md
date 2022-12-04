@@ -1,6 +1,8 @@
 # ashitav4-attendance
+
 Attendance addon for Ashitav4
-A basic addon for Ashitav4 to log out all current members of your alliance to a textfile.
+
+A basic addon for Ashitav4 to log current members of your alliance to a textfile.
 
 usage: /attendance now or /att now
 
