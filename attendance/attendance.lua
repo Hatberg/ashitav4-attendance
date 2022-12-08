@@ -1,7 +1,7 @@
 addon.name      = 'attendance';
 addon.author    = 'Hatberg';
-addon.version   = '0.1';
-addon.desc      = 'Logs current alliance members to a TXT file';
+addon.version   = '0.2';
+addon.desc      = 'Logs current alliance members to a CSV file';
 addon.link      = 'https://github.com/Hatberg/ashitav4-attendance';
 
 require('common');
@@ -25,8 +25,8 @@ local function print_help(isError)
     end
 
     local cmds = T{
-        { '/attendance help', 'Displays the addons help information.' },
-        { '/attendance now', 'Performs attendance log now.' },
+        { '/attendance help','Displays the addons help information.' },
+		{ '/attendance now','Performs attendance log now.' },
     };
 
     -- Print the command list..
@@ -38,52 +38,54 @@ end
 local function get_party()
     local party = AshitaCore:GetMemoryManager():GetParty();
     local playername = party:GetMemberName(0);
-    local timestamp = os.date("%Y-%m-%d_%H-%M-%S");
-    local utc_offset = os.date("%z");
+	local logdate = os.date("%Y-%m-%d")
+	local logtime = os.date("%H:%M:%S");
+	local logtime_filename = os.date("%H-%M-%S");
+	local utc_offset = os.date("%z");
 
     for x = 1, 18 do
         if party:GetMemberIsActive(x - 1) == 0 then
-           -- do nothing
-        else
-            local name = party:GetMemberName(x - 1);
+		   -- do nothing
+		else
+		    local charactername = party:GetMemberName(x - 1);
             local zone = party:GetMemberZone(x - 1);
-            local mainjob = jobs[party:GetMemberMainJob(x - 1)].en;
-            local subjob = jobs[party:GetMemberSubJob(x - 1)].en;
-            
-            local mainlvl = '';
-            local sublvl = '';
+			local mainjob = jobs[party:GetMemberMainJob(x - 1)].en;
+			local subjob = jobs[party:GetMemberSubJob(x - 1)].en;
+			
+			local mainlvl = '';
+			local sublvl = '';
 
             -- formatting anon / no subjob
-            if mainjob ~= "---" then 
-                mainlvl = party:GetMemberMainJobLevel(x - 1);
-            else 
-                mainlvl = '';
+			if mainjob ~= "---" then 
+			    mainlvl = party:GetMemberMainJobLevel(x - 1);
+			else 
+			    mainlvl = '';
+			end
+
+			if subjob ~= "---" then 
+			    sublvl = party:GetMemberSubJobLevel(x - 1);
+		    else 
+			    sublvl = '';
             end
 
-            if subjob ~= "---" then 
-                sublvl = party:GetMemberSubJobLevel(x - 1);
-            else 
-                sublvl = '';
-            end
-
-            local message = name + ', ' + mainjob + mainlvl + '/' + subjob + sublvl + ', ' + zones[zone].en + ', ' + timestamp + ', UTC' + utc_offset;
-            print(chat.header(addon.name):append(chat.message(message)));
-            write_to_file(playername, timestamp, message);
-        end
-    end
+			local message = charactername + ',' + mainjob + mainlvl + '/' + subjob + sublvl + ',' + logdate + ',' + logtime + ',UTC' + utc_offset + ',' +  zones[zone].en;
+			print(chat.header(addon.name):append(chat.message(message)));
+			write_to_file(playername, logdate, logtime_filename, message);
+		end
+	end
 end
 
-function write_to_file(playername, timestamp, message)
+function write_to_file(playername, logdate, logtime_filename, message)
     local path = AshitaCore:GetInstallPath() .. '\\addons\\attendance\\logs\\';
-    local logfile = playername + '_' + timestamp + '.txt';
+	local logfile = playername + '_' + logdate + '_' + logtime_filename + '.csv';
     
-    ashita.fs.create_dir(path);
-    
-    local filename = io.open((path .. logfile), 'a');
+	ashita.fs.create_dir(path);
+	
+	local filename = io.open((path .. logfile), 'a');
     if (filename ~= nil) then
-        filename:write(message .. '\n');
+		filename:write(message .. '\n');
         filename:close();
-    else
+	else
         print(chat.header(addon.name):append(chat.message('Could not write to file: ' .. path .. logfile)));
     end
 end
@@ -92,25 +94,25 @@ end
 * event: load
 * desc : Event called when the addon is being loaded.
 --]]
-ashita.events.register('load', 'load_cb', function ()
+ashita.events.register('load','load_cb', function ()
     -- does nothing for now
-    -- todo: load logging preferences
+	-- todo: load logging preferences
 end);
 
 --[[
 * event: unload
 * desc : Event called when the addon is being unloaded.
 --]]
-ashita.events.register('unload', 'unload_cb', function ()
+ashita.events.register('unload','unload_cb', function ()
     -- does nothing for now
-    -- todo: save logging preferences
+	-- todo: save logging preferences
 end);
 
 --[[
 * event: command
 * desc : Event called when the addon is processing a command.
 --]]
-ashita.events.register('command', 'command_cb', function (e)
+ashita.events.register('command','command_cb', function (e)
     -- Parse the command arguments..
     local args = e.command:args();
     if (#args == 0 or (args[1] ~= '/attendance' and args[1] ~= '/att')) then
@@ -129,7 +131,7 @@ ashita.events.register('command', 'command_cb', function (e)
     -- Handle: /attendance now - Writes an attendance log of all alliance members to disk
     if (#args == 2 and args[2]:any('now')) then
         print(chat.header(addon.name):append(chat.message('Performing Attendence log now:')));
-        get_party();
+		get_party();
         return;
     end
 
